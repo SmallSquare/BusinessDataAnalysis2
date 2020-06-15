@@ -2,12 +2,12 @@ import csv
 
 
 def save_csv(commentlist):
-    headers = ['id', 'text', 'time', 'name']
+    headers = ['id', 'text', 'time', 'name', 'area', 'sex']
 
     rows = []
 
     for comment in commentlist:
-        rows.append([comment['id'], comment['text'], comment['time'], comment['name']])
+        rows.append([comment['id'], comment['text'], comment['time'], comment['name'], comment["area"], comment["sex"]])
 
     print(rows)
 

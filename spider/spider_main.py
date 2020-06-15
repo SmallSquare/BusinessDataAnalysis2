@@ -73,18 +73,33 @@ def getComments(pages=100000):
             break
 
         for commentbody in jsondatum['data']['data']:
+            uid = commentbody['user']['id']
+            area = "其他"
+            sex = "无"
+            try:
+                r2 = session.get("http://weibo.cn/" + str(uid) + "/info", headers=headers, cookies=cookie_dict)
+                matchObj = re.search('地区:([\u4e00-\u9fa5]*)', r2.text)
+                matchObj2 = re.search('性别:([\u4e00-\u9fa5]*)', r2.text)
+                area = matchObj.group(1)
+                sex = matchObj2.group(1)
+            except Exception as e:
+                print("re Error.")
+                print(e)
+
             commentList.append(
                 {'id': commentbody['id'],
                  'text': commentbody['text'],
                  'time': commentbody['created_at'],
-                 'name': commentbody['user']["screen_name"]})
+                 'name': commentbody['user']["screen_name"],
+                 "area": area,
+                 "sex": sex})
 
         last_max_id = jsondatum['data']['max_id']
         last_max_id_type = jsondatum['data']['max_id_type']
 
         page += 1
         print(page)
-        time.sleep(random.randint(2, 5))
+        time.sleep(random.randint(1, 4))
 
     return commentList
 

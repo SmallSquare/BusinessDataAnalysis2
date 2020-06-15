@@ -32,11 +32,12 @@ def insert_comment(commentlist):
     # use method cursor() to get a 游标.
     cursor = db.cursor()
 
-    sql = "REPLACE INTO weibocomments(id, text , time, name) VALUES (%s, %s, %s, %s)"
+    sql = "REPLACE INTO weibocomments(id, text , time, name, area, sex) VALUES (%s, %s, %s, %s, %s, %s)"
 
     try:
         for comment in commentlist:
-            cursor.execute(sql, (comment["id"], comment["text"], comment["time"], comment["name"]))
+            cursor.execute(sql, (
+            comment["id"], comment["text"], comment["time"], comment["name"], comment["area"], comment["sex"]))
             print(comment)
         db.commit()
     except Exception as e:
@@ -65,8 +66,10 @@ def get_comments():
             text = row[1]
             time = row[2]
             name = row[3]
+            area = row[4]
+            sex = row[5]
             # print("id=%s,text=%s,movie_id=%s" % (id, text, movie_id))
-            comment_list.append({"id": id, "text": text, "time": time, "name": name})
+            comment_list.append({"id": id, "text": text, "time": time, "name": name, "area": area, "sex": sex})
     except Exception as e:
         print("Unable to fetch data.")
 
