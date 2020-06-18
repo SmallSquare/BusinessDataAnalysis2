@@ -26,7 +26,7 @@ def login(usrname, pwd):
     print("Login successfully.")
 
 
-def getComments(pages=100000):
+def getComments(id="3424883176420210", pages=100000, getarea=True):
     """
     This method can get comments.
     :return: commentlist
@@ -51,15 +51,14 @@ def getComments(pages=100000):
             break
 
         if last_max_id == "":
-            url = "https://m.weibo.cn/comments/hotflow?id=3424883176420210&mid=3424883176420210&max_id_type=0"
+            url = "https://m.weibo.cn/comments/hotflow?id=" + str(id) + "&mid=" + str(id) + "&max_id_type=0"
         else:
-            url = "https://m.weibo.cn/comments/hotflow?id=3424883176420210&mid=3424883176420210&max_id=" + str(
+            url = "https://m.weibo.cn/comments/hotflow?id=" + str(id) + "&mid=" + str(id) + "&max_id=" + str(
                 last_max_id) + "&max_id_type=" + str(last_max_id_type)
-            print(url)
+            # print(url)
 
         r = session.get(url, headers=headers, cookies=cookie_dict)
-
-        print(r.text)
+        # print(r.text)
 
         try:
             jsondatum = r.json()
@@ -74,17 +73,15 @@ def getComments(pages=100000):
 
         for commentbody in jsondatum['data']['data']:
             uid = commentbody['user']['id']
-            area = "其他"
-            sex = "无"
-            try:
-                r2 = session.get("http://weibo.cn/" + str(uid) + "/info", headers=headers, cookies=cookie_dict)
-                matchObj = re.search('地区:([\u4e00-\u9fa5]*)', r2.text)
-                matchObj2 = re.search('性别:([\u4e00-\u9fa5]*)', r2.text)
-                area = matchObj.group(1)
-                sex = matchObj2.group(1)
-            except Exception as e:
-                print("re Error.")
-                print(e)
+
+            area = "未获取"
+            if getarea:
+                area = getCommentUserArea(uid)
+
+            if commentbody['user']['gender'] == 'f':
+                sex = "女"
+            else:
+                sex = "男"
 
             commentList.append(
                 {'id': commentbody['id'],
@@ -93,20 +90,73 @@ def getComments(pages=100000):
                  'name': commentbody['user']["screen_name"],
                  "area": area,
                  "sex": sex})
+            try:
+                print(commentbody['id'] + "/" + area + "/" + sex + "/" + commentbody['text'])
+            except Exception as e:
+                print(e)
 
         last_max_id = jsondatum['data']['max_id']
         last_max_id_type = jsondatum['data']['max_id_type']
 
+        print("已完成" + str(page) + "页")
         page += 1
-        print(page)
-        time.sleep(random.randint(1, 4))
+        if not getarea:
+            time.sleep(random.randint(2, 5))
 
     return commentList
 
 
+def getCommentUserArea(uid):
+    time.sleep(random.randint(2, 3))
+
+    session = requests.Session()
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/71.0.3578.98 Safari/537.36'
+    }
+    cookies = cookielib.LWPCookieJar("Cookie.txt")
+    cookies.load(ignore_discard=True, ignore_expires=True)
+    cookie_dict = requests.utils.dict_from_cookiejar(cookies)
+    # try:
+    #     r2 = session.get("http://weibo.cn/" + str(uid) + "/info", headers=headers, cookies=cookie_dict)
+    #     matchObj = re.search('地区:([\u4e00-\u9fa5]*)', r2.text)
+    #     area = matchObj.group(1)
+    # except Exception as e:
+    #     print("re Error.")
+    #     print(r2.text)
+    #     print(e)
+
+    cid = ""
+    r = session.get("http://m.weibo.cn/api/container/getIndex?type=uid&value=" + str(uid), headers=headers)
+    jsonObj = r.json()
+    try:
+        for tab in jsonObj['data']['tabsInfo']['tabs']:
+            if tab['id'] == 1:
+                cid = tab['containerid']
+    except Exception as e:
+        print(e)
+        print(r.text)
+    try:
+        r = session.get("https://m.weibo.cn/api/container/getIndex?containerid=" + str(cid) + "_-_INFO",
+                        headers=headers)
+        jsonObj2 = r.json()
+        for card in jsonObj2['data']['cards']:
+            for cardgroup in card['card_group']:
+                try:
+                    if cardgroup['item_name'] == "所在地":
+                        return cardgroup['item_content']
+                except Exception as e:
+                    pass
+    except Exception as e:
+        print(e)
+        print(r.text)
+
+
 if __name__ == '__main__':
     login("18214888360", "6366565")
-    commentlist = getComments(2000)
+    commentlist = getComments("4515487243886433", 1000, False)
     print("爬到" + str(len(commentlist)) + "条")
-    util_csv.save_csv(commentlist)
-    database.insert_comment(commentlist)
+    util_csv.save_csv(commentlist, "positive_data")
+    # database.insert_comment(commentlist)
+
+    # getCommentUserArea(5579896374)

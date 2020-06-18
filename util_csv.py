@@ -1,7 +1,7 @@
 import csv
 
 
-def save_csv(commentlist):
+def save_csv(commentlist, filename= "data"):
     headers = ['id', 'text', 'time', 'name', 'area', 'sex']
 
     rows = []
@@ -11,7 +11,7 @@ def save_csv(commentlist):
 
     print(rows)
 
-    with open('data.csv', 'w', encoding='utf-8')as f:
+    with open(filename + '.csv', 'w', encoding='utf-8')as f:
         f_csv = csv.writer(f)
         f_csv.writerow(headers)
         f_csv.writerows(rows)
