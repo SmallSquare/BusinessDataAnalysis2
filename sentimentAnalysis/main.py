@@ -39,7 +39,7 @@ def process():
     data = pd.read_csv('./data/data.csv')
     wod = um.wod('./data/stopwords_hit.txt')
     data['cut_text'] = data['text'].apply(wod.so)
-    data.to_csv('./data/data_test_process.csv', encoding='utf-8', index=False)
+    data.to_csv('./data/data_test_process.csv', encoding='utf-8-sig', index=False)
 
 def draw():
 
@@ -49,65 +49,70 @@ def draw():
     # 发评论数论与时段的统计
     ##################
 
-    all_time = pro_data['time'].apply(lambda time: re.search(r"(\d{2}):\d{2}:\d{2}", time).group(1))
-    time_freq = [0 for i in range(24)]
-    def g(h):
-        time_freq[h] += 1
-    all_time.apply(f).apply(g)
-    matplotlib.rcParams['font.sans-serif'] = ['SimHei']
-    matplotlib.rcParams['font.family'] = 'sans-serif'
-    matplotlib.rcParams['axes.unicode_minus'] = False
-    plt.rcParams['figure.figsize'] = (12, 5)
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    ax1.bar(range(len(time_freq)), time_freq, color='#41B6E6')
-    ax1.set_xlabel('发评论时间')
-    ax1.set_ylabel('评论数量')
-    ax1.set_title('各时间段留言数量')
-    for i, (_x, _y) in enumerate(zip(range(len(time_freq)), time_freq)):
-        plt.text(_x, _y, time_freq[i], color="#001871")
-    plt.savefig('./picture/time_count.png',dpi=900, bbox_inches='tight')
+    # all_time = pro_data['time'].apply(lambda time: re.search(r"(\d{2}):\d{2}:\d{2}", time).group(1))
+    # time_freq = [0 for i in range(24)]
+    # def g(h):
+    #     time_freq[h] += 1
+    # all_time.apply(f).apply(g)
+    # matplotlib.rcParams['font.sans-serif'] = ['SimHei']
+    # matplotlib.rcParams['font.family'] = 'sans-serif'
+    # matplotlib.rcParams['axes.unicode_minus'] = False
+    # plt.rcParams['figure.figsize'] = (12, 5)
+    # fig = plt.figure()
+    # ax1 = fig.add_subplot(111)
+    # ax1.bar(range(len(time_freq)), time_freq, color='#41B6E6')
+    # ax1.set_xlabel('发评论时间')
+    # ax1.set_ylabel('评论数量')
+    # ax1.set_title('各时间段留言数量')
+    # for i, (_x, _y) in enumerate(zip(range(len(time_freq)), time_freq)):
+    #     plt.text(_x, _y, time_freq[i], color="#001871")
+    # plt.savefig('./picture/time_count.png',dpi=900, bbox_inches='tight')
 
     ##################
     # 关键词词频统计 前50个
     ##################
 
-    wod = um.wod('stopwords_hit.txt')
+    wod = um.wod('./data/stopwords_hit.txt')
     sw = wod.get_stop_words()
     tfidf_m = CountVectorizer(max_features=50, max_df=0.8,
                               min_df=3,
                               stop_words=sw, ngram_range=(1,2)).fit(np.array(pro_data['cut_text']))
-    count = tfidf_m.fit_transform(pro_data['cut_text'])
-    try:
-        with open('output_model/tf_idf_vector.model', 'wb') as f:
-            c = {
-                "tfidf": count
-            }
-            pickle.dump(c, f)
-            print('saved done')
-    except:
-        f.close()
+    count = tfidf_m.fit_transform(pro_data['cut_text']).toarray()
+    # try:
+    #     with open('output_model/tf_idf_vector.model', 'wb') as f:
+    #         c = {
+    #             "tfidf": count
+    #         }
+    #         pickle.dump(c, f)
+    #         print('saved done')
+    # except:
+    #     f.close()
     # print(len(tfidf_m.get_feature_names()))
     # print(tfidf_m.vocabulary_)
-    def d(t):
-        temp = [i for i in t.split(' ') if tfidf_m.vocabulary_.get(i)]
-        return temp
     sum = np.sum(count, axis=0)
+    # print(sum)
     res = {}
     for key, value in  tfidf_m.vocabulary_.items():
         res[key] = sum[value]
-    res_sort = sorted(res.items(), key=lambda k: k[1], reverse=True)
-    # print(res)
+    # res_sort = sorted(res.items(), key=lambda k: k[1], reverse=True)
+    print(res)
 
     #################
     # 共现词统计
     # node: [关键词1, 关键词2......] 50个
     # edge: 每个节点与其他节点的关系 {node1: {node2: weight}}
     ##################
+    def dd(t):
+
+        t = eval(t)
+        # print(type(t))
+        temp = [i for i in t if tfidf_m.vocabulary_.get(i)]
+        return temp
 
     relationship = {}
     edge = {}
-    cut = pro_data['cut_text'].apply(d)
+    cut = pro_data['cut_text'].apply(dd)
+    # print(cut)
     for i in cut:
         if len(i) == 0:
             continue
@@ -144,9 +149,9 @@ def draw():
             w_weight[n] = count
     w_weight = sorted(w_weight.items(), key=lambda k: k[1], reverse=True)
     # print(w_word)
-    print(w_weight)
+    # print(w_weight)
     for i in w_weight[:10]:
-        print('{} \t 共现词汇={}'.format(i[0], w_word[i[0]]))
+        print('{} \t 共现词汇={}'.format(i[0], w_word[i[0]][:10]))
 
 
 #############
@@ -195,7 +200,7 @@ def analysis():
 def main():
     process()
     draw()
-    analysis()
+    # analysis()
 
 
 
