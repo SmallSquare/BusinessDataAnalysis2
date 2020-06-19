@@ -27,12 +27,14 @@ class wod(object):
 
     def so(self, sentence):
         seg_list = jieba.cut(sentence, cut_all=False)
+        # print("seg//////", seg_list)
         temp = " ".join(seg_list).split()
+        # print(temp)
         out_sentences = []
         for w in temp:
             if w not in self.stop_words:
                 out_sentences.append(w)
-        return list(out_sentences)
+        return out_sentences
 
 #############
 # 使用LSTM模型
