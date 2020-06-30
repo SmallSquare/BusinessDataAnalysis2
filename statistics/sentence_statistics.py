@@ -30,7 +30,7 @@ def draw_image(items):
         print(item)
         xs.append(item[0])
         ys.append(item[1])
-    plt.figure(figsize=(30, 20), dpi=120)
+    plt.figure(figsize=(15, 10), dpi=60)
     plt.plot(xs, ys)
     # plt.xticks(xs)
     # plt.yticks(range(min(ys), max(ys) + 1))

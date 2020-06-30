@@ -152,11 +152,54 @@ def getCommentUserArea(uid):
         print(r.text)
 
 
+def getUidByName(name):
+    session = requests.Session()
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/71.0.3578.98 Safari/537.36'
+    }
+    r = session.get(
+        "https://m.weibo.cn/api/container/getIndex?containerid=100103type%3D3%26q%3D" + name + "%26t%3D0&page_type=searchall",
+        headers=headers)
+    jsonObj = r.json()
+    for card in jsonObj['data']['cards']:
+        if card['card_type'] == 11:
+            return card['card_group'][0]['user']['id']
+
+
+def getUserWeiboContent(uid):
+    try:
+        content_list = []
+        session = requests.Session()
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/71.0.3578.98 Safari/537.36'
+        }
+        # First step is to get the cid (container id)
+        cid = None
+        r = session.get("http://m.weibo.cn/api/container/getIndex?type=uid&value=" + str(uid), headers=headers)
+        jsonObj = r.json()
+        for tab in jsonObj['data']['tabsInfo']['tabs']:
+            if tab['id'] == 2:
+                cid = tab['containerid']
+        # Then, get the weibo blogs
+        r2 = session.get("https://m.weibo.cn/api/container/getIndex?containerid=" + str(cid), headers=headers)
+        jsonObj = r2.json()
+        for card in jsonObj['data']['cards']:
+            content_list.append(re.sub('<[^<]+?>', '', card['mblog']['text'].replace('\n', '').strip()))
+        return content_list
+    except Exception as e:
+        print(e.args)
+
+
 if __name__ == '__main__':
-    login("18214888360", "6366565")
-    commentlist = getComments("4515487243886433", 1000, False)
-    print("爬到" + str(len(commentlist)) + "条")
-    util_csv.save_csv(commentlist, "positive_data")
+    pass
+    # login("18214888360", "6366565")
+    # commentlist = getComments("4515487243886433", 1000, False)
+    # print("爬到" + str(len(commentlist)) + "条")
+    # util_csv.save_csv(commentlist, "positive_data")
     # database.insert_comment(commentlist)
 
     # getCommentUserArea(5579896374)
+    for content in getUserWeiboContent(6107465978):
+        print(content)

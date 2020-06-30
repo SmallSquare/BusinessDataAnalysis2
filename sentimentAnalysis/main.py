@@ -8,7 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import re
 
-from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 import gensim
 from gensim import corpora, models, similarities
@@ -18,19 +18,24 @@ from gensim.models.word2vec import LineSentence
 import pickle
 import joblib
 import codecs
-from datetime import  datetime
+from datetime import datetime
 import multiprocessing
 
 import sentimentAnalysis.utils.common as um
+
+import spider.spider_main
+import database
+
 
 ##################
 # 处理日期的工具
 ##################
 def f(str):
-    if(str[0] == '0'):
+    if (str[0] == '0'):
         return int(str[1])
     else:
         return int(str)
+
 
 def process():
     ##################
@@ -41,8 +46,8 @@ def process():
     data['cut_text'] = data['text'].apply(wod.so)
     data.to_csv('./data/data_test_process.csv', encoding='utf-8-sig', index=False)
 
-def draw():
 
+def draw():
     pro_data = pd.read_csv('./data/data_test_process.csv')
 
     ##################
@@ -76,7 +81,7 @@ def draw():
     sw = wod.get_stop_words()
     tfidf_m = CountVectorizer(max_features=50, max_df=0.8,
                               min_df=3,
-                              stop_words=sw, ngram_range=(1,2)).fit(np.array(pro_data['cut_text']))
+                              stop_words=sw, ngram_range=(1, 2)).fit(np.array(pro_data['cut_text']))
     count = tfidf_m.fit_transform(pro_data['cut_text']).toarray()
     # try:
     #     with open('output_model/tf_idf_vector.model', 'wb') as f:
@@ -92,7 +97,7 @@ def draw():
     sum = np.sum(count, axis=0)
     # print(sum)
     res = {}
-    for key, value in  tfidf_m.vocabulary_.items():
+    for key, value in tfidf_m.vocabulary_.items():
         res[key] = sum[value]
     # res_sort = sorted(res.items(), key=lambda k: k[1], reverse=True)
     print(res)
@@ -121,18 +126,18 @@ def draw():
                 edge[w] = {}
             if w == i[-1:]:
                 break
-            nex = i[index+1:]
+            nex = i[index + 1:]
             for d in nex:
                 if d == w: continue
                 if d not in edge[w]:
                     edge[w][d] = 1
                 else:
-                    edge[w][d] +=1
+                    edge[w][d] += 1
     # print(edge)
     with codecs.open('./data/co-occurence_node.csv', 'w', 'utf-8-sig') as f:
         f.write('Id,Label,Weight \r\n')
         for n, t in res.items():
-            f.write(n + ',' + n + ',' +str(t) + '\r\n')
+            f.write(n + ',' + n + ',' + str(t) + '\r\n')
     w_weight = {}
     w_word = {}
     with codecs.open('./data/co-occurence_edge.csv', 'w', 'utf-8-sig') as f:
@@ -159,8 +164,9 @@ def draw():
 #############
 
 from sentimentAnalysis.utils.common import LSTM
-def analysis():
 
+
+def analysis():
     data = pd.read_csv('data/data_test_process.csv')
     lstm = LSTM(word_dict='./data/dict_word.pk',
                 label_dict='./data/dict_label.pk',
@@ -179,9 +185,9 @@ def analysis():
     for i in range(24):
         temp = data[data['hour'] == i]
         l = len(temp)
-        p = temp[temp['score'] == 1]['score'].sum() / l *0.4
-        n = temp[temp['score'] == -1]['score'].sum() / l *1.6
-        time_score[i] = np.around(n+p, decimals=3)
+        p = temp[temp['score'] == 1]['score'].sum() / l * 0.4
+        n = temp[temp['score'] == -1]['score'].sum() / l * 1.6
+        time_score[i] = np.around(n + p, decimals=3)
 
     matplotlib.rcParams['font.sans-serif'] = ['SimHei']
     matplotlib.rcParams['font.family'] = 'sans-serif'
@@ -192,23 +198,47 @@ def analysis():
     ax1.set_xlabel('发评论时间')
     ax1.set_ylabel('情感均分')
     ax1.set_title('各时间段情感均分')
-    ax1.set_ylim(-0.25,0.1)
+    ax1.set_ylim(-0.25, 0.1)
     plt.plot(range(len(time_score)), time_score, color="#41B6E6")
-    plt.savefig('../picture/time_score.png',dpi=900, bbox_inches='tight')
+    plt.savefig('../picture/time_score.png', dpi=900, bbox_inches='tight')
+
+
+def analysis_single(text, lstm):
+    score = lstm.predict(text)
+    if text == "转发微博":
+        score = 1
+    # print("“" + text + "”的情感分为" + str(score))
+    return score
+
+
+def analysis_weibo(uid):
+    lstm = LSTM(word_dict='./data/dict_word.pk',
+                label_dict='./data/dict_label.pk',
+                model='./output_model/lstm_2_r.h5')
+    negative_total = 0
+    total = 0
+    try:
+        for text in spider.spider_main.getUserWeiboContent(uid):
+            if analysis_single(text, lstm) < 0:
+                negative_total += 1
+            total += 1
+        print("Result：用户" + str(uid) + "的" + str(total) + "条最新微博中有" + str(negative_total) + "条强烈抑郁倾向留言。")
+    except Exception as e:
+        print(e.args)
 
 
 def main():
-    process()
-    draw()
+    # process()
+    # draw()
     # analysis()
-
-
+    # analysis_weibo(1648007681)
+    lstm = LSTM(word_dict='./data/dict_word.pk',
+                label_dict='./data/dict_label.pk',
+                model='./output_model/lstm_2_r.h5')
+    for comment in database.get_comments():
+        if analysis_single(comment['text'], lstm) > 0:
+            analysis_weibo(spider.spider_main.getUidByName(comment['name']))
 
 
 if __name__ == '__main__':
-
     main()
-
-
-
-

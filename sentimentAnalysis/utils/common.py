@@ -1,7 +1,7 @@
 # coding=utf-8
 # code by CZ.
 
-import pandas  as pd
+import pandas as pd
 import demjson
 import numpy as np
 import jieba
@@ -9,13 +9,14 @@ import pickle
 from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
 
+
 #############
 # 分词，去停用词
 #############
 class wod(object):
     def __init__(self, word):
         self.word = word
-        self.stop_words= []
+        self.stop_words = []
         self.get_stop_words()
 
     def get_stop_words(self):
@@ -36,6 +37,7 @@ class wod(object):
                 out_sentences.append(w)
         return out_sentences
 
+
 #############
 # 使用LSTM模型
 #############
@@ -51,6 +53,7 @@ class LSTM(object):
         self.model_path = model
         self.load()
         print('load word and label dict and lstm model')
+
     def load(self):
         with open(self.word_dict, 'rb') as f:
             self.word_dictionary = pickle.load(f)
@@ -59,7 +62,7 @@ class LSTM(object):
         self.label_dict = {v: k for k, v in output_dictionary.items()}
         self.model = load_model(self.model_path)
 
-    def predict(self, text, input_shape = 180):
+    def predict(self, text, input_shape=180):
         # print(text)
         try:
             x = [[self.word_dictionary[word] for word in text]]
@@ -71,7 +74,3 @@ class LSTM(object):
             # print("您输入的句子有汉字不在词汇表中，请重新输入")
             # print("不在词汇表中的单词为：%s." % err)
             return 1
-
-
-
-

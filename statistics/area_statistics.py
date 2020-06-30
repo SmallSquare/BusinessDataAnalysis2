@@ -1,6 +1,7 @@
 import re
 import csv
 import database
+from matplotlib import pyplot as plt
 
 
 def get_area_statistics():
@@ -74,6 +75,29 @@ def get_areas():
     return area
 
 
+def draw_image(items):
+    xs = []
+    ys = []
+    sum = 0
+    plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+    for item in items:
+        if item[0] != "海外" and item[0] != "其他":
+            print(item[0])
+            xs.append(item[0])
+            ys.append(item[1])
+        sum += item[1]
+    plt.figure(figsize=(11, 6), dpi=60)
+    plt.yticks([])
+    plt.bar(xs, ys, 1, color=['r', 'g', 'b', 'c', 'm', 'y'])
+    plt.title("地域统计（排除海外和其他）")
+    for item in items:
+        plt.text(item[0], item[1], "%.2f%%" % (item[1] / int(sum) * 100), ha="center")
+    # plt.xticks(xs)
+    # plt.yticks(range(min(ys), max(ys) + 1))
+    # plt.savefig("./result.png")
+    plt.show()
+
+
 if __name__ == '__main__':
     items = get_area_statistics()
 
@@ -91,3 +115,5 @@ if __name__ == '__main__':
         f_csv = csv.writer(f)
         f_csv.writerow(headers)
         f_csv.writerows(rows)
+
+    draw_image(items)
